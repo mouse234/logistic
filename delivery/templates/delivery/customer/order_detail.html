@@ -1,0 +1,189 @@
+{% extends 'delivery/base.html' %}
+
+{% block title %}Order #{{ order.id }} - Swift Nationwide Delivery{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-8 mx-auto">
+        <!-- Order Header -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h4><i class="bi bi-receipt"></i> Order #{{ order.id }}</h4>
+                    {% if order.status == 'PENDING' %}
+                        <span class="badge bg-warning fs-6">{{ order.get_status_display }}</span>
+                    {% elif order.status == 'ASSIGNED' %}
+                        <span class="badge bg-info fs-6">{{ order.get_status_display }}</span>
+                    {% elif order.status == 'IN_TRANSIT' %}
+                        <span class="badge bg-primary fs-6">{{ order.get_status_display }}</span>
+                    {% elif order.status == 'DELIVERED' %}
+                        <span class="badge bg-success fs-6">{{ order.get_status_display }}</span>
+                    {% elif order.status == 'CANCELLED' %}
+                        <span class="badge bg-danger fs-6">{{ order.get_status_display }}</span>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6><i class="bi bi-geo-alt text-primary"></i> Pickup Address</h6>
+                        <address class="mb-0">
+                            {{ order.pickup_address.street }}<br>
+                            {{ order.pickup_address.city }}, {{ order.pickup_address.state }}<br>
+                            {{ order.pickup_address.pincode }}
+                        </address>
+                    </div>
+                    <div class="col-md-6">
+                        <h6><i class="bi bi-geo-alt-fill text-success"></i> Delivery Address</h6>
+                        <address class="mb-0">
+                            {{ order.delivery_address.street }}<br>
+                            {{ order.delivery_address.city }}, {{ order.delivery_address.state }}<br>
+                            {{ order.delivery_address.pincode }}
+                        </address>
+                    </div>
+                </div>
+                
+                <hr class="my-4">
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6><i class="bi bi-person"></i> Contact Information</h6>
+                        <p class="mb-1"><strong>Name:</strong> {{ order.contact_name }}</p>
+                        <p class="mb-0"><strong>Phone:</strong> {{ order.contact_phone }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <h6><i class="bi bi-calendar"></i> Order Information</h6>
+                        <p class="mb-1"><strong>Created:</strong> {{ order.created_at|date:"M d, Y g:i A" }}</p>
+                        {% if order.expected_delivery %}
+                            <p class="mb-0"><strong>Expected Delivery:</strong> {{ order.expected_delivery|date:"M d, Y g:i A" }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                {% if order.assigned_driver %}
+                <hr class="my-4">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6><i class="bi bi-person-badge"></i> Assigned Driver</h6>
+                        <p class="mb-1"><strong>Name:</strong> {{ order.assigned_driver.name }}</p>
+                        <p class="mb-1"><strong>Phone:</strong> {{ order.assigned_driver.phone }}</p>
+                        {% if order.assigned_driver.vehicle_number %}
+                            <p class="mb-0"><strong>Vehicle:</strong> {{ order.assigned_driver.vehicle_number }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Order Items -->
+        {% if items %}
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5><i class="bi bi-box"></i> Items</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Item Name</th>
+                                <th>Quantity</th>
+                                <th>Weight (kg)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in items %}
+                            <tr>
+                                <td>{{ item.name }}</td>
+                                <td>{{ item.quantity }}</td>
+                                <td>{{ item.weight_kg }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Delivery Updates Timeline -->
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="bi bi-clock-history"></i> Delivery Timeline</h5>
+            </div>
+            <div class="card-body">
+                {% if updates %}
+                    <div class="timeline">
+                        {% for update in updates %}
+                        <div class="timeline-item mb-3">
+                            <div class="d-flex">
+                                <div class="flex-shrink-0">
+                                    {% if update.status == 'PENDING' %}
+                                        <div class="timeline-marker bg-warning"></div>
+                                    {% elif update.status == 'ASSIGNED' %}
+                                        <div class="timeline-marker bg-info"></div>
+                                    {% elif update.status == 'IN_TRANSIT' %}
+                                        <div class="timeline-marker bg-primary"></div>
+                                    {% elif update.status == 'DELIVERED' %}
+                                        <div class="timeline-marker bg-success"></div>
+                                    {% elif update.status == 'CANCELLED' %}
+                                        <div class="timeline-marker bg-danger"></div>
+                                    {% endif %}
+                                </div>
+                                <div class="flex-grow-1 ms-3">
+                                    <div class="card">
+                                        <div class="card-body py-2">
+                                            <div class="d-flex justify-content-between align-items-start">
+                                                <div>
+                                                    <h6 class="mb-1">{{ update.get_status_display }}</h6>
+                                                    {% if update.note %}
+                                                        <p class="mb-1 text-muted">{{ update.note }}</p>
+                                                    {% endif %}
+                                                    {% if update.location %}
+                                                        <p class="mb-0 small text-info">
+                                                            <i class="bi bi-geo-alt"></i> {{ update.location }}
+                                                        </p>
+                                                    {% endif %}
+                                                </div>
+                                                <small class="text-muted">{{ update.timestamp|date:"M d, g:i A" }}</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="text-center text-muted">
+                        <i class="bi bi-clock"></i>
+                        <p class="mb-0">No updates available yet</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="text-center mt-4">
+            <a href="{% url 'order_list' %}" class="btn btn-outline-primary">
+                <i class="bi bi-arrow-left"></i> Back to Orders
+            </a>
+            {% if order.status != 'DELIVERED' and order.status != 'CANCELLED' %}
+                <button class="btn btn-outline-info ms-2" onclick="location.reload()">
+                    <i class="bi bi-arrow-clockwise"></i> Refresh Status
+                </button>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<style>
+.timeline-marker {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    margin-top: 8px;
+}
+</style>
+{% endblock %}

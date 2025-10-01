@@ -1,0 +1,235 @@
+{% extends 'delivery/base.html' %}
+
+{% block title %}Admin Dashboard - Swift Nationwide Delivery{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="bi bi-speedometer2"></i> Admin Dashboard</h2>
+    <a href="/admin/" class="btn btn-outline-secondary">
+        <i class="bi bi-gear"></i> Django Admin
+    </a>
+</div>
+
+<!-- Statistics Cards -->
+<div class="row mb-4">
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="card text-center bg-primary text-white">
+            <div class="card-body">
+                <i class="bi bi-box-seam" style="font-size: 2rem;"></i>
+                <h3 class="mt-2">{{ total_orders }}</h3>
+                <p class="mb-0">Total Orders</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="card text-center bg-warning text-dark">
+            <div class="card-body">
+                <i class="bi bi-clock" style="font-size: 2rem;"></i>
+                <h3 class="mt-2">{{ pending_orders }}</h3>
+                <p class="mb-0">Pending</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="card text-center bg-info text-white">
+            <div class="card-body">
+                <i class="bi bi-truck" style="font-size: 2rem;"></i>
+                <h3 class="mt-2">{{ in_transit_orders }}</h3>
+                <p class="mb-0">In Transit</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="card text-center bg-success text-white">
+            <div class="card-body">
+                <i class="bi bi-check-circle" style="font-size: 2rem;"></i>
+                <h3 class="mt-2">{{ delivered_orders }}</h3>
+                <p class="mb-0">Delivered</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Orders -->
+<div class="card">
+    <div class="card-header">
+        <h5><i class="bi bi-list-ul"></i> Recent Orders</h5>
+    </div>
+    <div class="card-body">
+        {% if orders %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Order ID</th>
+                            <th>Customer</th>
+                            <th>Route</th>
+                            <th>Status</th>
+                            <th>Driver</th>
+                            <th>Created</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for order in orders %}
+                        <tr>
+                            <td>
+                                <a href="{% url 'order_detail' order.id %}" class="text-decoration-none">
+                                    #{{ order.id }}
+                                </a>
+                            </td>
+                            <td>{{ order.customer }}</td>
+                            <td>
+                                <small class="text-muted">
+                                    {{ order.pickup_address.city }} → {{ order.delivery_address.city }}
+                                </small>
+                            </td>
+                            <td>
+                                {% if order.status == 'PENDING' %}
+                                    <span class="badge bg-warning">{{ order.get_status_display }}</span>
+                                {% elif order.status == 'ASSIGNED' %}
+                                    <span class="badge bg-info">{{ order.get_status_display }}</span>
+                                {% elif order.status == 'IN_TRANSIT' %}
+                                    <span class="badge bg-primary">{{ order.get_status_display }}</span>
+                                {% elif order.status == 'DELIVERED' %}
+                                    <span class="badge bg-success">{{ order.get_status_display }}</span>
+                                {% elif order.status == 'CANCELLED' %}
+                                    <span class="badge bg-danger">{{ order.get_status_display }}</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if order.assigned_driver %}
+                                    <small>{{ order.assigned_driver.name }}</small>
+                                {% else %}
+                                    <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <small>{{ order.created_at|date:"M d, g:i A" }}</small>
+                            </td>
+                            <td>
+                                <div class="btn-group btn-group-sm" role="group">
+                                    <!-- Assign Driver -->
+                                    {% if order.status == 'PENDING' and drivers %}
+                                        <button class="btn btn-outline-primary btn-sm" 
+                                                data-bs-toggle="modal" 
+                                                data-bs-target="#assignDriverModal{{ order.id }}">
+                                            <i class="bi bi-person-plus"></i>
+                                        </button>
+                                    {% endif %}
+                                    
+                                    <!-- Update Status -->
+                                    {% if order.status != 'DELIVERED' and order.status != 'CANCELLED' %}
+                                        <button class="btn btn-outline-warning btn-sm" 
+                                                data-bs-toggle="modal" 
+                                                data-bs-target="#updateStatusModal{{ order.id }}">
+                                            <i class="bi bi-arrow-repeat"></i>
+                                        </button>
+                                    {% endif %}
+                                    
+                                    <!-- View Details -->
+                                    <a href="{% url 'order_detail' order.id %}" class="btn btn-outline-info btn-sm">
+                                        <i class="bi bi-eye"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="text-center py-4">
+                <i class="bi bi-inbox" style="font-size: 3rem; color: #dee2e6;"></i>
+                <h5 class="mt-3 text-muted">No Orders Found</h5>
+                <p class="text-muted">Orders will appear here once customers start placing them.</p>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Modals for Actions -->
+{% for order in orders %}
+    <!-- Assign Driver Modal -->
+    {% if order.status == 'PENDING' and drivers %}
+    <div class="modal fade" id="assignDriverModal{{ order.id }}" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Assign Driver to Order #{{ order.id }}</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <form method="post" action="{% url 'assign_driver' order.id %}">
+                    {% csrf_token %}
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label for="driver_id{{ order.id }}" class="form-label">Select Driver</label>
+                            <select name="driver_id" id="driver_id{{ order.id }}" class="form-select" required>
+                                <option value="">Choose a driver...</option>
+                                {% for driver in drivers %}
+                                    <option value="{{ driver.id }}">
+                                        {{ driver.name }}{% if driver.vehicle_number %} ({{ driver.vehicle_number }}){% endif %}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Assign Driver</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Update Status Modal -->
+    {% if order.status != 'DELIVERED' and order.status != 'CANCELLED' %}
+    <div class="modal fade" id="updateStatusModal{{ order.id }}" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Update Status for Order #{{ order.id }}</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <form method="post" action="{% url 'update_status' order.id %}">
+                    {% csrf_token %}
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label for="status{{ order.id }}" class="form-label">New Status</label>
+                            <select name="status" id="status{{ order.id }}" class="form-select" required>
+                                <option value="">Select status...</option>
+                                {% if order.status == 'PENDING' or order.status == 'ASSIGNED' %}
+                                    <option value="ASSIGNED">Assigned</option>
+                                    <option value="IN_TRANSIT">In Transit</option>
+                                {% endif %}
+                                {% if order.status == 'ASSIGNED' or order.status == 'IN_TRANSIT' %}
+                                    <option value="IN_TRANSIT">In Transit</option>
+                                    <option value="DELIVERED">Delivered</option>
+                                {% endif %}
+                                <option value="CANCELLED">Cancelled</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="note{{ order.id }}" class="form-label">Note (Optional)</label>
+                            <textarea name="note" id="note{{ order.id }}" class="form-control" rows="3" 
+                                      placeholder="Add a note about this status update..."></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label for="location{{ order.id }}" class="form-label">Location (Optional)</label>
+                            <input type="text" name="location" id="location{{ order.id }}" class="form-control" 
+                                   placeholder="Current location or checkpoint">
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-warning">Update Status</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+{% endfor %}
+{% endblock %}

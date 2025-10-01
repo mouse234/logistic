@@ -1,0 +1,32 @@
+{% extends 'delivery/base.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}Register - Swift Nationwide Delivery{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6 col-lg-4">
+        <div class="card">
+            <div class="card-header text-center">
+                <h4><i class="bi bi-person-plus"></i> Register</h4>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    {{ form|crispy }}
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-person-plus"></i> Register
+                        </button>
+                    </div>
+                </form>
+                
+                <hr>
+                <div class="text-center">
+                    <p class="mb-0">Already have an account? <a href="{% url 'login' %}">Login here</a></p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
