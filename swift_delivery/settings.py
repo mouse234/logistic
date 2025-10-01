@@ -137,3 +137,7 @@ LOGIN_URL = '/admin/login/'
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+CSRF_TRUSTED_ORIGINS = [
+    'https://logistic-production-4216.up.railway.app'
+]
